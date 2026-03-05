@@ -1,0 +1,17 @@
+#
+# File: ashbot_world.dsv.in
+# Project: AshBot World
+# File Created: Sunday, 26th January 2025 5:37:15 PM
+# Author: nknab
+# Email: kojo.anyinam-boateng@alumni.ashesi.edu.gh
+# Version: 1.0
+# Brief: Hook to add the share directory to the Gazebo resource path
+# -----
+# Last Modified: Sunday, 26th January 2025 5:43:29 PM
+# Modified By: nknab
+# -----
+# Copyright ©2025 nknab
+#
+
+
+prepend-non-duplicate;GZ_SIM_RESOURCE_PATH;share;@CMAKE_INSTALL_PREFIX@/share/@PROJECT_NAME@

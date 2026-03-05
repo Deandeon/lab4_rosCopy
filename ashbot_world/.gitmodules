@@ -1,0 +1,3 @@
+[submodule "ashbot_world"]
+	path = ashbot_world
+	url = https://github.com/Ashesi-Robotics/ashbot_world.git

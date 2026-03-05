@@ -1,0 +1,100 @@
+{#
+ # File: macros.jinja
+ # Project: AshBot World
+ # File Created: Sunday, 26th January 2025 5:42:03 PM
+ # Author: nknab
+ # Email: kojo.anyinam-boateng@alumni.ashesi.edu.gh
+ # Version: 1.0
+ # Brief: Macros for the AshBot World project
+ # -----
+ # Last Modified: Monday, 27th January 2025 11:45:23 AM
+ # Modified By: nknab
+ # -----
+ # Copyright ©2025 nknab
+ #}
+
+{% macro generate_comment_box(world_name, generation_date, generation_id) %}
+    {#  Create a comment box #}
+    {%- set world_name_info = (world_name | upper) + " WORLD" %}
+    {%- set generation_date_info = "# This file has been auto-generated on " + generation_date %}
+    {%- set generation_id_info = "Generation ID: " + generation_id %}
+
+    {%- set max_length = [world_name_info, generation_date_info, generation_id_info] | map('length') | max %}
+    {%- set border = '#' * (max_length + 2) %}
+
+    {{ border }}
+    {{ generation_date_info.ljust(max_length) }} #
+    {{ ("#" + world_name_info.center(max_length)).ljust(max_length + 1) }}#
+    {{ ("#" + generation_id_info.center(max_length)).ljust(max_length + 1) }}#
+    {{ border }}
+
+{% endmacro %}
+
+{% macro colour_material(colour) %}
+    {#  Create a colour material #}
+    {%- set colour = colour | capitalize %}
+    {%- set material_name = "Gazebo/" + colour %}
+
+    <material>
+        <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>{{ material_name }}</name>
+        </script>
+    </material>
+
+{% endmacro %}
+
+
+{% macro box_inertial(name, mass, x, y, z) %}
+    {# Create a box inertial element #}
+	<inertial name="{{ name }}_inertial">
+		<pose>0 0 0 0 0 0</pose>
+		<mass>{{ mass }}</mass>
+		<inertia>
+			<ixx>{{ (1/12) * mass * ((y * y) + (z * z)) }}</ixx>
+			<ixy>0</ixy>
+			<ixz>0</ixz>
+			<iyy>{{ (1/12) * mass * ((x * x) + (z * z)) }}</iyy>
+			<iyz>0</iyz>
+			<izz>{{ (1/12) * mass * ((x * x) + (y * y)) }}</izz>
+		</inertia>
+	</inertial>
+{% endmacro %}
+
+{% macro box_geometry(size) %}
+    {#  Create a box geometry #}
+    <geometry>
+        <box>
+            <size>{{ size[0] }} {{ size[1] }} {{ size[2] }}</size>
+        </box>
+    </geometry>
+{% endmacro %}
+
+
+{% macro create_box(name, colour, pose, size, mass=0, inertia=False, friction=False) %}
+    {#  Create a box link with visual, collision and inertial elements #}
+    <link name="{{ name }}">
+        <pose>{{ pose }}</pose>
+        <visual name="{{ name }}_visual">
+            {{ box_geometry(size) }}
+            {{ colour_material(colour) }}
+        </visual>
+        <collision name="{{ name }}_collision">
+            {{ box_geometry(size) }}
+            {% if friction %}
+                <surface>
+                    <friction>
+                        <ode>
+                            <mu>0.5</mu>
+                            <mu2>0.5</mu2>
+                        </ode>
+                    </friction>
+                </surface>
+            {% endif %}
+        </collision>
+        {% if inertia %}
+            {{ box_inertial(mass, size[0], size[1], size[2]) }}
+        {% endif %}
+    </link>
+
+{% endmacro %}

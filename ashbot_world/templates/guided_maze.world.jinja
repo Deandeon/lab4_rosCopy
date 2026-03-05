@@ -1,0 +1,48 @@
+{#
+ # File: guided_maze.world.jinja
+ # Project: AshBot World
+ # File Created: Sunday, 26th January 2025 5:34:18 PM
+ # Author: nknab
+ # Email: kojo.anyinam-boateng@alumni.ashesi.edu.gh
+ # Version: 1.0
+ # Brief: World template for a guided maze
+ # -----
+ # Last Modified: Monday, 27th January 2025 11:51:36 AM
+ # Modified By: nknab
+ # -----
+ # Copyright ©2025 nknab
+ #}
+
+{% import 'macros/macros.jinja' as macros %}
+<!--
+{{ macros.generate_comment_box(world_name, generation_date, generation_id) }}
+-->
+
+{# VARIABLES #}
+{% set box_height = box_height | default(0.4) %}
+{% set cell_size = cell_size | default(0.5) %}
+
+
+{# WORLD #}
+<sdf version="1.6">
+    <world name="guided_maze">
+
+        {% include 'macros/common.jinja' %}
+
+        {% for colour, boxes in {'Red': red_boxes, 'Green': green_boxes, 'Blue': blue_boxes}.items() %}
+            {% if boxes %}
+                <model name="{{ colour | lower }}_boxes">
+                    <static>true</static>
+                    {% for position in boxes %}
+                        {% set name = (colour | lower) + "_box_" ~ loop.index %}
+                        {% set pose = [position[0] * cell_size, position[1] * cell_size, box_height / 2, 0, 0, 0] | join(' ') %}
+                        {% set size = [cell_size, cell_size, box_height] %}
+
+                        {{ macros.create_box(name, colour, pose, size) }}
+                    {% endfor %}
+                </model>
+            {% endif %}
+        {% endfor %}
+
+    </world>
+</sdf>

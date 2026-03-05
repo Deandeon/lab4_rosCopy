@@ -1,0 +1,93 @@
+import pytest
+import rclpy
+from geometry_msgs.msg import Twist
+from wall_follower.wall_follower import WallFollower
+@pytest.fixture(scope="module", autouse=True)
+def rclpy_context():
+    rclpy.init()
+    yield
+    rclpy.shutdown()
+
+
+@pytest.fixture
+def wf(monkeypatch):
+    node = WallFollower()
+    monkeypatch.setattr(node.cmd_vel_pub, "publish", lambda msg: None)
+    monkeypatch.setattr(node, "print_info", lambda: None)
+    node.iterations_count = node.ignore_iterations
+    node.twist_cmd = Twist()
+    node.wall_found = False
+    node.side_chosen = "none"
+    node.scan_front_range = 10.0
+    node.scan_left_range = 10.0
+    node.scan_right_range = 10.0
+
+    return node
+def wallSearch_move_slow(wf):
+    wf.wall_found = False
+    wf.scan_front_range = wf.front_threshold + 1.0
+    wf.control_callback()
+    assert wf.twist_cmd.linear.x == wf.lin_vel_slow
+    assert wf.twist_cmd.angular.z == wf.ang_vel_zero
+
+
+def Wallsearch_initiate_P2_right(wf):
+    #how it woks : test for wall ,when detected sets state to wall found and stops and chooses right when its entry is closer
+    wf.wall_found = False
+    wf.scan_front_range = wf.front_threshold - 0.1
+    wf.scan_right_range = 0.8
+    wf.scan_left_range = 1.5
+
+    wf.control_callback()
+
+    assert wf.wall_found is True
+    assert wf.twist_cmd.linear.x == wf.lin_vel_zero
+    assert wf.twist_cmd.angular.z == wf.ang_vel_zero
+    assert wf.side_chosen == "right"
+
+
+def wallsearch_initate_p2_left(wf):
+    #chooses left when closer
+    wf.wall_found = False
+    wf.scan_front_range = wf.front_threshold - 0.1
+    wf.scan_right_range = 1.4
+    wf.scan_left_range = 0.7
+    wf.control_callback()
+    assert wf.wall_found is True
+    assert wf.side_chosen == "left"
+
+
+def wallBlocked_turn_right(wf):
+   # tests by seeing if wall detected that setsthe wall found and stops and chooses right when riggth is closer
+    wf.wall_found = True
+    wf.side_chosen = "right"
+    wf.scan_front_range = wf.front_threshold - 0.1
+    wf.control_callback()
+    assert wf.twist_cmd.linear.x == wf.lin_vel_slow
+    assert wf.twist_cmd.angular.z > 0.0
+
+
+def wallFrontClear__when_too_closeto_RW_turn_LFT(wf):#turn left when too close to wall
+    wf.wall_found = True
+    wf.side_chosen = "right"
+    wf.scan_front_range = wf.front_threshold + 1.0
+    wf.scan_right_range = wf.side_threshold_min - 0.05
+    wf.control_callback()
+    assert wf.twist_cmd.linear.x == wf.lin_vel_fast
+    assert wf.twist_cmd.angular.z == wf.ang_vel_slow
+
+def tooFar_from_RW_turn_Right(wf):#RW right wall
+    wf.wall_found = True
+    wf.side_chosen = "right"
+    wf.scan_front_range = wf.front_threshold + 1.0
+    wf.scan_right_range = wf.side_threshold_max + 0.05
+    wf.control_callback()
+    assert wf.twist_cmd.linear.x == wf.lin_vel_fast
+    assert wf.twist_cmd.angular.z == -wf.ang_vel_slow
+
+def test_publish_twist_cmd_clamps_max_speeds(wf):
+    wf.twist_cmd.linear.x = 999.0
+    wf.twist_cmd.angular.z = 999.0
+    wf.publish_twist_cmd()
+    assert wf.twist_cmd.linear.x == 0.150
+    assert wf.twist_cmd.angular.z == 0.450
